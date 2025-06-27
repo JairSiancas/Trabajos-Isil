@@ -26,10 +26,19 @@ const renderizar = () => {
   for (let i = 0; i < totalCells; i++) {
     let celda = document.createElement('div');
     celda.classList.add('cell');
-    if (i === player) celda.classList.add('player');
-    else if (traps.indexOf(i) !== -1) celda.classList.add('trap');
-    else if (enemies.indexOf(i) !== -1) celda.classList.add('enemy');
-    else if (i === treasure) celda.classList.add('treasure');
+    if (i === player) {
+      celda.classList.add('player');
+      celda.textContent = '🧙';
+    } else if (traps.indexOf(i) !== -1) {
+      celda.classList.add('trap');
+      celda.textContent = '💀';
+    } else if (enemies.indexOf(i) !== -1) {
+      celda.classList.add('enemy');
+      celda.textContent = '👾';
+    } else if (i === treasure) {
+      celda.classList.add('treasure');
+      celda.textContent = '💰';
+    }
     game.appendChild(celda);
   }
 };
