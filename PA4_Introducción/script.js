@@ -1,6 +1,9 @@
 const game = document.getElementById('game');
 const status = document.getElementById('status');
 const restart = document.getElementById('restart');
+const recordDisplay = document.getElementById('record');
+let record = parseInt(localStorage.getItem('mazmorraRecord')) || 1;
+
 
 let player, traps, enemies, treasure;
 let level = 1;
