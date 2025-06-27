@@ -1,131 +1,133 @@
-const gridSize = 10;
-const totalCells = gridSize * gridSize;
 const game = document.getElementById('game');
 const status = document.getElementById('status');
-const restartBtn = document.getElementById('restartBtn');
+const restart = document.getElementById('restart');
 
+let player, traps, enemies, treasure;
 let level = 1;
-let playerPosition;
-let trapPositions = [];
-let enemyPositions = [];
-let treasurePosition;
-let gameActive = true;
+let gameOver = false;
+const gridSize = 10;
+const totalCells = gridSize * gridSize;
 
-function getRandomEmptyPositions(exclude = [], count = 1) {
-  const positions = [];
-  while (positions.length < count) {
+// Función para obtener posición aleatoria no repetida
+const randomPositions = (cantidad, excluir) => {
+  let posiciones = [];
+  while (posiciones.length < cantidad) {
     let pos = Math.floor(Math.random() * totalCells);
-    if (!exclude.includes(pos) && !positions.includes(pos)) {
-      positions.push(pos);
+    if (excluir.indexOf(pos) === -1 && posiciones.indexOf(pos) === -1) {
+      posiciones.push(pos);
     }
   }
-  return positions;
-}
+  return posiciones;
+};
 
-function generateLevel() {
-  gameActive = true;
-  restartBtn.style.display = 'none';
-  playerPosition = 0;
-  const exclude = [playerPosition];
-  trapPositions = getRandomEmptyPositions(exclude, 5 + level); // Más trampas cada nivel
-  exclude.push(...trapPositions);
-  enemyPositions = getRandomEmptyPositions(exclude, Math.min(1 + Math.floor(level / 2), 5));
-  exclude.push(...enemyPositions);
-  [treasurePosition] = getRandomEmptyPositions(exclude, 1);
-  status.textContent = `Nivel ${level} - Usa WASD para moverte`;
-  renderGrid();
-}
-
-function renderGrid() {
+// Crear el mapa
+const renderizar = () => {
   game.innerHTML = '';
   for (let i = 0; i < totalCells; i++) {
-    const cell = document.createElement('div');
-    cell.classList.add('cell');
-    if (i === playerPosition) cell.classList.add('player');
-    if (trapPositions.includes(i)) cell.classList.add('trap');
-    if (i === treasurePosition) cell.classList.add('treasure');
-    if (enemyPositions.includes(i)) cell.classList.add('enemy');
-    game.appendChild(cell);
+    let celda = document.createElement('div');
+    celda.classList.add('cell');
+    if (i === player) celda.classList.add('player');
+    else if (traps.indexOf(i) !== -1) celda.classList.add('trap');
+    else if (enemies.indexOf(i) !== -1) celda.classList.add('enemy');
+    else if (i === treasure) celda.classList.add('treasure');
+    game.appendChild(celda);
   }
-}
+};
 
-function movePlayer(direction) {
-  if (!gameActive) return;
+// Generar nuevo nivel
+const iniciarNivel = () => {
+  gameOver = false;
+  player = 0;
+  let ocupadas = [player];
+  traps = randomPositions(4 + level, ocupadas);
+  ocupadas = ocupadas.concat(traps);
+  enemies = randomPositions(level, ocupadas);
+  ocupadas = ocupadas.concat(enemies);
+  treasure = randomPositions(1, ocupadas)[0];
+  status.textContent = `Nivel ${level} - Evita trampas y enemigos`;
+  restart.style.display = 'none';
+  renderizar();
+};
 
-  let row = Math.floor(playerPosition / gridSize);
-  let col = playerPosition % gridSize;
+// Movimiento del jugador
+const moverJugador = (direccion) => {
+  if (gameOver) return;
 
-  switch (direction) {
-    case 'w': if (row > 0) playerPosition -= gridSize; break;
-    case 's': if (row < gridSize - 1) playerPosition += gridSize; break;
-    case 'a': if (col > 0) playerPosition -= 1; break;
-    case 'd': if (col < gridSize - 1) playerPosition += 1; break;
-  }
+  let fila = Math.floor(player / gridSize);
+  let col = player % gridSize;
+  let nuevaPos = player;
 
-  checkState();
-  moveEnemies();
-  checkState();
-  renderGrid();
-}
+  if (direccion === 'w' && fila > 0) nuevaPos -= gridSize;
+  else if (direccion === 's' && fila < gridSize - 1) nuevaPos += gridSize;
+  else if (direccion === 'a' && col > 0) nuevaPos -= 1;
+  else if (direccion === 'd' && col < gridSize - 1) nuevaPos += 1;
 
-function moveEnemies() {
-  enemyPositions = enemyPositions.map(enemyPos => {
-    let enemyRow = Math.floor(enemyPos / gridSize);
-    let enemyCol = enemyPos % gridSize;
-    let playerRow = Math.floor(playerPosition / gridSize);
-    let playerCol = playerPosition % gridSize;
+  player = nuevaPos;
+  verificarEstado();
+  moverEnemigos();
+  verificarEstado();
+  renderizar();
+};
 
-    let newRow = enemyRow;
-    let newCol = enemyCol;
+// Movimiento básico enemigo (se acerca al jugador)
+const moverEnemigos = () => {
+  for (let i = 0; i < enemies.length; i++) {
+    let enemigo = enemies[i];
+    let filaE = Math.floor(enemigo / gridSize);
+    let colE = enemigo % gridSize;
+    let filaP = Math.floor(player / gridSize);
+    let colP = player % gridSize;
 
-    if (enemyRow < playerRow) newRow++;
-    else if (enemyRow > playerRow) newRow--;
+    let nuevaFila = filaE;
+    let nuevaCol = colE;
 
-    if (enemyCol < playerCol) newCol++;
-    else if (enemyCol > playerCol) newCol--;
+    if (filaP < filaE) nuevaFila--;
+    else if (filaP > filaE) nuevaFila++;
+    if (colP < colE) nuevaCol--;
+    else if (colP > colE) nuevaCol++;
 
-    let newPos = newRow * gridSize + newCol;
-    if (
-      newPos !== playerPosition &&
-      !trapPositions.includes(newPos) &&
-      !enemyPositions.includes(newPos)
-    ) {
-      return newPos;
-    } else {
-      return enemyPos; // No se mueve
+    let nuevaPos = nuevaFila * gridSize + nuevaCol;
+
+    if (nuevaPos !== player && traps.indexOf(nuevaPos) === -1) {
+      enemies[i] = nuevaPos;
     }
-  });
-}
+  }
+};
 
-function checkState() {
-  if (trapPositions.includes(playerPosition)) {
-    endGame("💀 ¡Has caído en una trampa!");
-  } else if (enemyPositions.includes(playerPosition)) {
-    endGame("👾 ¡Un enemigo te atrapó!");
-  } else if (playerPosition === treasurePosition) {
+// Verificar colisiones
+const verificarEstado = () => {
+  if (traps.indexOf(player) !== -1) {
+    status.textContent = '💀 ¡Caíste en una trampa!';
+    finalizar();
+  } else if (enemies.indexOf(player) !== -1) {
+    status.textContent = '👾 ¡Un enemigo te atrapó!';
+    finalizar();
+  } else if (player === treasure) {
     level++;
-    status.textContent = "🎉 ¡Nivel completado! Cargando siguiente nivel...";
-    setTimeout(generateLevel, 1000);
+    status.textContent = '🎉 ¡Tesoro encontrado! Nivel siguiente...';
+    setTimeout(iniciarNivel, 1000);
   }
-}
+};
 
-function endGame(message) {
-  gameActive = false;
-  status.textContent = message;
-  restartBtn.style.display = 'inline-block';
-}
+// Finaliza el juego
+const finalizar = () => {
+  gameOver = true;
+  restart.style.display = 'inline-block';
+};
 
-function keyHandler(e) {
-  const key = e.key.toLowerCase();
-  if (['w', 'a', 's', 'd'].includes(key)) {
-    movePlayer(key);
+// Teclado
+document.addEventListener('keydown', (e) => {
+  const tecla = e.key.toLowerCase();
+  if (['w', 'a', 's', 'd'].indexOf(tecla) !== -1) {
+    moverJugador(tecla);
   }
-}
-
-restartBtn.addEventListener('click', () => {
-  level = 1;
-  generateLevel();
 });
 
-document.addEventListener('keydown', keyHandler);
-generateLevel();
+// Reiniciar
+restart.addEventListener('click', () => {
+  level = 1;
+  iniciarNivel();
+});
+
+// Empezar juego
+iniciarNivel();
