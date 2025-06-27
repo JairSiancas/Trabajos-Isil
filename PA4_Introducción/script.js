@@ -71,6 +71,8 @@ const moverJugador = (direccion) => {
 
 // Movimiento básico enemigo (se acerca al jugador)
 const moverEnemigos = () => {
+  let nuevosEnemigos = [];
+
   for (let i = 0; i < enemies.length; i++) {
     let enemigo = enemies[i];
     let filaE = Math.floor(enemigo / gridSize);
@@ -83,16 +85,27 @@ const moverEnemigos = () => {
 
     if (filaP < filaE) nuevaFila--;
     else if (filaP > filaE) nuevaFila++;
+
     if (colP < colE) nuevaCol--;
     else if (colP > colE) nuevaCol++;
 
     let nuevaPos = nuevaFila * gridSize + nuevaCol;
 
-    if (nuevaPos !== player && traps.indexOf(nuevaPos) === -1) {
-      enemies[i] = nuevaPos;
+    // Verificar que no se mueva a trampa, jugador ni otro enemigo
+    if (
+      nuevaPos !== player &&
+      traps.indexOf(nuevaPos) === -1 &&
+      nuevosEnemigos.indexOf(nuevaPos) === -1
+    ) {
+      nuevosEnemigos.push(nuevaPos);
+    } else {
+      nuevosEnemigos.push(enemigo); // No se mueve si hay conflicto
     }
   }
+
+  enemies = nuevosEnemigos;
 };
+
 
 // Verificar colisiones
 const verificarEstado = () => {
