@@ -1,0 +1,31 @@
+body {
+  font-family: Arial;
+  text-align: center;
+  background-color: #f0f0f0;
+}
+
+#tablero {
+  display: grid;
+  grid-template-columns: repeat(8, 40px);
+  justify-content: center;
+  gap: 2px;
+  margin-top: 20px;
+}
+
+.celda {
+  width: 40px;
+  height: 40px;
+  background-color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 4px;
+  user-select: none;
+}
+
+.revelado {
+  background-color: #eee;
+  cursor: default;
+}
